@@ -75,9 +75,10 @@ app.post('/crear-preferencia', async (req, res) => {
     console.error('Error al crear preferencia:', error);
     res.status(500).json({ error: 'Error interno al generar la preferencia' });
   }
+
 });
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`)
-});
+})
