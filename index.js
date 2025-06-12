@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { MercadoPagoConfig } from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 dotenv.config();
 
@@ -11,12 +11,17 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000'
 }));
 
-//MP
+if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+  throw new Error('Falta configurar MERCADOPAGO_ACCESS_TOKEN');
+}
+
+// Configuración Mercado Pago
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
-})
+});
+const preferenceClient = new Preference(mpClient);
 
-// Base de datos local de servicios (seguridad)
+// Base de datos local de servicios (simulada)
 const servicios = {
   '1': {
     title: 'Visita técnica',
@@ -31,15 +36,13 @@ const servicios = {
     unit_price: 200000
   }
 };
-if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-  throw new Error('Falta configurar MERCADOPAGO_ACCESS_TOKEN');
-}
 
-//ruta para crear preferencia
+// Ruta para crear preferencia
 app.post('/crear-preferencia', async (req, res) => {
   if (!req.body || typeof req.body.servicio !== 'string') {
     return res.status(400).json({ error: 'Datos inválidos' });
   }
+
   try {
     const { servicio } = req.body;
     const datos = servicios[servicio];
@@ -48,7 +51,7 @@ app.post('/crear-preferencia', async (req, res) => {
       return res.status(400).json({ error: 'Servicio inválido' });
     }
 
-    const preference = await mpClient.preference.create({
+    const result = await preferenceClient.create({
       body: {
         items: [
           {
@@ -66,7 +69,7 @@ app.post('/crear-preferencia', async (req, res) => {
       }
     });
 
-    res.status(200).json({ id: preference.id })
+    res.status(200).json({ id: result.id });
 
   } catch (error) {
     console.error('Error al crear preferencia:', error);
@@ -77,4 +80,4 @@ app.post('/crear-preferencia', async (req, res) => {
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`)
-})
+});
