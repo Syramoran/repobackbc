@@ -68,10 +68,11 @@ app.post('/crear-preferencia', async (req, res) => {
 
     res.status(200).json({ id: preference.id })
 
-  } catch (error) {
-    console.error('Error al crear preferencia:', error);
-    res.status(500).json({ error: 'Error interno al generar la preferencia' });
-  }
+  } error: (err) => {
+  console.error('Error al crear preferencia:', err);
+  alert(`Error: ${err.status} - ${err.error?.error || 'Sin mensaje'}`);
+}
+
 });
 
 const PORT = process.env.PORT || 4000;
