@@ -1,46 +1,10 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { MercadoPagoConfig, Preference } from 'mercadopago';
-
-dotenv.config();
-
-const app = express();
-app.use(express.json());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000'
-}));
-
-if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-  throw new Error('Falta configurar MERCADOPAGO_ACCESS_TOKEN');
-}
-
-// Configuración Mercado Pago
-const mpClient = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN
-});
-const preferenceClient = new Preference(mpClient);
-
-// Base de datos local de servicios (simulada)
-const servicios = {
-  '1': {
-    title: 'Visita técnica',
-    unit_price: 10000
-  },
-  '2': {
-    title: 'Limpieza',
-    unit_price: 50000
-  },
-  '3': {
-    title: 'Instalación',
-    unit_price: 200000
-  }
-};
-
-// Ruta para crear preferencia
+// Modifica la ruta /crear-preferencia
 app.post('/crear-preferencia', async (req, res) => {
   if (!req.body || typeof req.body.servicio !== 'string') {
-    return res.status(400).json({ error: 'Datos inválidos' });
+    return res.status(400).json({ 
+      error: 'Datos inválidos',
+      details: 'Se requiere un objeto con propiedad "servicio"'
+    });
   }
 
   try {
@@ -48,37 +12,56 @@ app.post('/crear-preferencia', async (req, res) => {
     const datos = servicios[servicio];
 
     if (!datos) {
-      return res.status(400).json({ error: 'Servicio inválido' });
+      return res.status(400).json({ 
+        error: 'Servicio inválido',
+        availableServices: Object.keys(servicios)
+      });
     }
 
-    const result = await preferenceClient.create({
-      body: {
-        items: [
-          {
-            title: datos.title,
-            quantity: 1,
-            unit_price: datos.unit_price
-          }
-        ],
-        back_urls: {
-          success: `${process.env.FRONTEND_URL}/pago-exitoso`,
-          failure: `${process.env.FRONTEND_URL}/pago-fallido`,
-          pending: `${process.env.FRONTEND_URL}/pago-pendiente`
-        },
-        auto_return: 'approved'
-      }
+    // Verificar que las URLs de retorno estén configuradas
+    if (!process.env.FRONTEND_URL) {
+      console.warn('FRONTEND_URL no está configurado, usando localhost');
+    }
+
+    const requestData = {
+      items: [
+        {
+          title: datos.title,
+          quantity: 1,
+          unit_price: datos.unit_price,
+          currency_id: 'ARS' // Asegurar la moneda
+        }
+      ],
+      back_urls: {
+        success: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pago-exitoso`,
+        failure: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pago-fallido`,
+        pending: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/pago-pendiente`
+      },
+      auto_return: 'approved'
+    };
+
+    console.log('Enviando a MercadoPago:', requestData);
+    
+    const result = await preferenceClient.create({ body: requestData });
+    
+    console.log('Respuesta de MercadoPago:', result);
+
+    res.status(200).json({ 
+      id: result.id,
+      init_point: result.init_point // Útil para debug
     });
 
-    res.status(200).json({ id: result.id });
-
   } catch (error) {
-    console.error('Error al crear preferencia:', error);
-    res.status(500).json({ error: 'Error interno al generar la preferencia' });
+    console.error('Error detallado al crear preferencia:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data
+    });
+    
+    res.status(500).json({ 
+      error: 'Error al generar la preferencia',
+      details: error.message,
+      code: error.code
+    });
   }
-
 });
-
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`)
-})
