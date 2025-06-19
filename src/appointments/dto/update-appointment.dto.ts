@@ -1,4 +1,12 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateAppointmentDto } from './create-appointment.dto';
+import { IsDate, IsEnum, IsOptional } from 'class-validator';
+import { Estados } from 'src/common/enum-estados';
 
-export class UpdateAppointmentDto extends PartialType(CreateAppointmentDto) {}
+export class UpdateAppointmentDto {
+  @IsOptional()
+  @IsDate()
+  date?: Date;
+
+  @IsOptional()
+  @IsEnum(Estados)
+  state?: Estados;
+}

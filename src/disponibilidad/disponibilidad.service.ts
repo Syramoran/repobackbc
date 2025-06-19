@@ -1,26 +1,61 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateDisponibilidadDto } from './dto/create-disponibilidad.dto';
 import { UpdateDisponibilidadDto } from './dto/update-disponibilidad.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Disponibility } from './entities/disponibilidad.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class DisponibilidadService {
-  create(createDisponibilidadDto: CreateDisponibilidadDto) {
-    return 'This action adds a new disponibilidad';
+
+  constructor(
+    @InjectRepository(Disponibility) private readonly dispoRepo: Repository<Disponibility>
+  ) { }
+
+  async create(createDisponibilidadDto: CreateDisponibilidadDto) {
+    const dto = createDisponibilidadDto
+    const bloques = await this.dispoRepo.find({ where: { deleted: false, week_day: dto.week_day } });
+
+    const haySolapamiento = bloques.some(b =>
+      dto.start < b.finish && dto.finish > b.start
+    );
+    //Revisá todos los bloques que ya existen ese día. Si al menos uno tiene un horario que se cruza con el nuevo bloque que querés crear, entonces hay solapamiento.
+    //El inicio del nuevo bloque (dto.start) es antes del final de uno existente (b.finish), y
+    //El final del nuevo bloque (dto.finish) es despues del inicio de uno existente (b.start)
+    if (haySolapamiento) {
+      throw new BadRequestException('El nuevo bloque se superpone con otro existente');
+    }
+
+    try {
+      const bloque = this.dispoRepo.create(createDisponibilidadDto)
+      const guardado = await this.dispoRepo.save(bloque)
+
+      const { deleted, ...rest } = guardado;
+      return rest
+    } catch (error) {
+      throw new InternalServerErrorException('No se pudo crear el bloque de disponibilidad');
+    }
   }
 
-  findAll() {
-    return `This action returns all disponibilidad`;
+  async findAll() {
+    const bloques = await this.dispoRepo.find({ where: { deleted: false } });
+
+    return bloques.map(({ deleted, ...rest }) => rest); // si bloques esta vacío devuelve []
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} disponibilidad`;
-  }
 
-  update(id: number, updateDisponibilidadDto: UpdateDisponibilidadDto) {
-    return `This action updates a #${id} disponibilidad`;
-  }
+  async remove(id: number) {
+    const bloque = await this.dispoRepo.findOne({ where: { id } });
+    if (!bloque) {
+      throw new NotFoundException('Bloque disponible no encontrado');
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} disponibilidad`;
+    if (bloque.deleted) {
+      throw new BadRequestException('El bloque disponible ya está eliminado');
+    }
+
+    bloque.deleted = true;
+
+    await this.dispoRepo.save(bloque);
   }
 }

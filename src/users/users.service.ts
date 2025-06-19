@@ -71,7 +71,7 @@ export class UsersService {
   async update(uuid: string, updateDto: UpdateUserDto): Promise<UserResponseDto> {
 
     // buscar usuario a actualizar
-    const user = await this.userRepo.findOne({ where: { uuid } })
+    const user = await this.userRepo.findOne({ where: { uuid , deleted : false} })
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
@@ -85,9 +85,9 @@ export class UsersService {
     await this.userRepo.update(user.id, updateDto);
 
     //buscar usuario actualizado para devolverlo
-    const updatedUser = await this.userRepo.findOne({ where: { id: user.id } });
+    const updatedUser = await this.userRepo.findOne({ where: { id: user.id, deleted : false } });
     if (!updatedUser) {
-      throw new InternalServerErrorException('No se pudo actualizar el usuario');
+      throw new InternalServerErrorException('Usuario eliminado');
     }
 
     const { password, id, ...rest } = updatedUser;

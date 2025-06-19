@@ -1,4 +1,4 @@
-import { IsDate, IsEnum, IsInt, IsNotEmpty } from "class-validator";
+import { IsDate, IsEnum, IsInt, IsNotEmpty, IsUUID } from "class-validator";
 import { Estados } from "src/common/enum-estados";
 
 export class CreateAppointmentDto {
@@ -9,9 +9,9 @@ export class CreateAppointmentDto {
   @IsEnum(Estados)
   state?: Estados;
 
-  @IsInt()
-  user_id: number;
+  @IsUUID()
+  user_uuid: string
 
-  @IsInt()
-  servicio_id: number;
+  @IsUUID()
+  servicio_uuid: string
 }
