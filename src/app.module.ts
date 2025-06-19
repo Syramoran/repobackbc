@@ -12,10 +12,9 @@ import { DisponibilidadModule } from './disponibilidad/disponibilidad.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
 import { LogsModule } from './logs/logs.module';
-import { PayModule } from './pay/pay.module';
 
 @Module({
-  imports: [TypeOrmModule.forRoot(typeOrmConfig),UsersModule, AppointmentsModule, AuthModule, MailModule, CommonModule, FeriadosModule, ServiciosModule, DisponibilidadModule, LogsModule, PayModule],
+  imports: [TypeOrmModule.forRoot(typeOrmConfig),UsersModule, AppointmentsModule, AuthModule, MailModule, CommonModule, FeriadosModule, ServiciosModule, DisponibilidadModule, LogsModule],
   controllers: [AppController],
   providers: [AppService],
 })
