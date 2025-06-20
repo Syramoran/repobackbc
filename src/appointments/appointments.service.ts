@@ -54,7 +54,11 @@ export class AppointmentsService {
     }
 
     // 3. Verificar que no se superponga con otros turnos
-    const turnos = await this.turnoRepo.find({ where: { deleted: false } });
+    const turnos = await this.turnoRepo.find({
+      where: { deleted: false },
+      relations: ['servicio'],
+    });
+
     const turnosMismoDia = turnos.filter(t =>
       t.date.toISOString().split('T')[0] === dto.date.toISOString().split('T')[0]
     );
@@ -62,7 +66,7 @@ export class AppointmentsService {
     const haySolapamiento = turnosMismoDia.some(t => {
       const ini = new Date(t.date);
       const fin = new Date(ini);
-      fin.setMinutes(ini.getMinutes() + servicio.duration_min + 30);
+      fin.setMinutes(ini.getMinutes() + t.servicio.duration_min + 30);
       return horaInicio < fin && horaFin > ini;
     });
 
@@ -98,7 +102,6 @@ export class AppointmentsService {
     return turnos.map(({ deleted, id, ...rest }) => rest); // si bloques esta vacío devuelve []
   }
 
-
   async update(uuid: string, dto: UpdateAppointmentDto): Promise<any> {
     const turno = await this.turnoRepo.findOne({
       where: { uuid, deleted: false },
@@ -109,19 +112,16 @@ export class AppointmentsService {
       throw new NotFoundException('Turno no encontrado');
     }
 
-    // Solo si llega nueva fecha
+    // Solo si llega una nueva fecha
     if (dto.date) {
-      const nuevaFecha = new Date(dto.date);
-      if (isNaN(nuevaFecha.getTime())) {
-        throw new BadRequestException('Fecha inválida');
-      }
-
+      const nuevaFecha: Date = new Date(dto.date); 
+      const fecha = new Date(dto.date.toISOString().split('T')[0]);
       const horaInicio = new Date(dto.date);
       const horaTurno = horaInicio.toTimeString().split(':').slice(0, 2).join(':');
-      const week_d = nuevaFecha.getDay();
+      const week_d = fecha.getDay();
 
       // Validar feriado
-      const feriado = await this.feriadoRepo.findOne({ where: { date: nuevaFecha, deleted: false } });
+      const feriado = await this.feriadoRepo.findOne({ where: { date: fecha, deleted: false } });
       if (feriado) {
         throw new BadRequestException('No se pueden agendar turnos en feriados');
       }
@@ -141,21 +141,21 @@ export class AppointmentsService {
         throw new BadRequestException('El turno está fuera del horario disponible');
       }
 
-      // Validar superposición
-      const turnos = await this.turnoRepo.find({ where: { deleted: false } });
-
-      const fechaIso = nuevaFecha.toISOString().split('T')[0];
-      const turnosMismoDia = turnos.filter(t => {
-        if (!t.date) return false;
-        const fechaTurno = new Date(t.date);
-        const fechaTurnoIso = fechaTurno.toISOString().split('T')[0];
-        return t.uuid !== uuid && fechaTurnoIso === fechaIso;
+      // Verificar solapamiento con otros turnos
+      const turnos = await this.turnoRepo.find({
+        where: { deleted: false },
+        relations: ['servicio'],
       });
+
+      const turnosMismoDia = turnos.filter(t =>
+        t.uuid !== uuid &&
+        t.date.toISOString().split('T')[0] === nuevaFecha.toISOString().split('T')[0]
+      );
 
       const haySolapamiento = turnosMismoDia.some(t => {
         const ini = new Date(t.date);
         const fin = new Date(ini);
-        fin.setMinutes(ini.getMinutes() + turno.servicio.duration_min + 30);
+        fin.setMinutes(ini.getMinutes() + t.servicio.duration_min + 30);
         return horaInicio < fin && horaFin > ini;
       });
 
@@ -163,10 +163,10 @@ export class AppointmentsService {
         throw new BadRequestException('Ya existe un turno en ese horario');
       }
 
-      turno.date = dto.date;
+      turno.date = nuevaFecha;
     }
 
-    // Si llega un nuevo estado
+    // Actualizar estado si se envía
     if (dto.state) {
       turno.state = dto.state;
     }
@@ -177,15 +177,10 @@ export class AppointmentsService {
   }
 
 
-
-  async remove(uuid:string) {
-    const turno = await this.turnoRepo.findOne({ where: { uuid } });
+  async remove(uuid: string) {
+    const turno = await this.turnoRepo.findOne({ where: { uuid, deleted:false } });
     if (!turno) {
       throw new NotFoundException('Turno no encontrado');
-    }
-
-    if (turno.deleted) {
-      throw new BadRequestException('El turno ya está eliminado');
     }
 
     turno.deleted = true;

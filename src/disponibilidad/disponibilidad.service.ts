@@ -43,19 +43,21 @@ export class DisponibilidadService {
     return bloques.map(({ deleted, ...rest }) => rest); // si bloques esta vacío devuelve []
   }
 
+  async findAllByDay(dto: CreateDisponibilidadDto) {
+    const bloques = await this.dispoRepo.find({ where: { deleted: false, week_day: dto.week_day } });
+
+    return bloques.map(({ deleted, ...rest }) => rest); // si bloques esta vacío devuelve []
+  }
 
   async remove(id: number) {
-    const bloque = await this.dispoRepo.findOne({ where: { id } });
+    const bloque = await this.dispoRepo.findOne({ where: { id , deleted:false} });
     if (!bloque) {
       throw new NotFoundException('Bloque disponible no encontrado');
-    }
-
-    if (bloque.deleted) {
-      throw new BadRequestException('El bloque disponible ya está eliminado');
     }
 
     bloque.deleted = true;
 
     await this.dispoRepo.save(bloque);
+    return 'Bloque de tiempo disponible eliminado correctamente'
   }
 }

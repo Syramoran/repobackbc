@@ -16,7 +16,7 @@ export class Appointment {
     @Column({ type: 'datetime', nullable: false })
     date: Date;
 
-    @Column({ type: 'enum', enum: Estados })
+    @Column({ type: 'enum', enum: Estados, default:Estados.PENDIENTE })
     state: Estados;
 
     @Column({ type: 'boolean', default: false })

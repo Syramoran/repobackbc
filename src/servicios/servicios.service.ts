@@ -27,9 +27,6 @@ export class ServiciosService {
 
   async findAll(): Promise<any[]> {
     const servicios = await this.servicioRepo.find({ where: { deleted: false } });
-    if (servicios.length <= 0) {
-      return [];
-    }
     return servicios.map(({ deleted, id, ...rest }) => rest);
   }
 
@@ -43,7 +40,7 @@ export class ServiciosService {
   }
 
   async update(uuid: string, updateServicioDto: UpdateServicioDto) {
-    const servicio = await this.servicioRepo.findOne({ where: { uuid } });
+    const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted : false } });
     if (!servicio) {
       throw new NotFoundException('Servicio no encontrado');
     }
@@ -60,17 +57,14 @@ export class ServiciosService {
   }
 
   async remove(uuid: string) {
-    const servicio = await this.servicioRepo.findOne({ where: { uuid } });
+    const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted:false} });
     if (!servicio) {
       throw new NotFoundException('Servicio no encontrado');
-    }
-
-    if (servicio.deleted) {
-      throw new BadRequestException('El servicio ya está eliminado');
     }
 
     servicio.deleted = true;
 
     await this.servicioRepo.save(servicio);
+    return 'Servicio eliminado'
   }
 }

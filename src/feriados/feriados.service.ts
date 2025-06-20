@@ -25,9 +25,6 @@ export class FeriadosService {
 
   async findAll(): Promise<any[]> {
     const feriados = await this.feriadoRepo.find({ where: { deleted: false } });
-    if (feriados.length <= 0) {
-      return [];
-    }
     return feriados.map(({ deleted, ...rest }) => rest);
   }
 
@@ -57,17 +54,14 @@ export class FeriadosService {
   }
 
   async remove(id: number) {
-    const feriado = await this.feriadoRepo.findOne({ where: { id } });
+    const feriado = await this.feriadoRepo.findOne({ where: { id, deleted:false } });
     if (!feriado) {
       throw new NotFoundException('Feriado no encontrado');
     }
 
-    if (feriado.deleted) {
-      throw new BadRequestException('El servicio ya está eliminado');
-    }
-
     feriado.deleted = true;
 
-    await this.feriadoRepo.save(feriado);
+    await this.feriadoRepo.save(feriado); 
+    return 'Feriado eliminado correctamente.'
   }
 }

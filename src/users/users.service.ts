@@ -38,7 +38,7 @@ export class UsersService {
       const user = this.userRepo.create(dto);
       const guardado = await this.userRepo.save(user);
 
-      const { password, id, ...rest } = guardado;
+      const { password, id, deleted, ...rest } = guardado;
       return rest as UserResponseDto;
 
     } catch (error) {
@@ -51,10 +51,7 @@ export class UsersService {
 
   async findAll(): Promise<UserResponseDto[]> {
     const users = await this.userRepo.find({ where: { deleted: false } });
-    if (users.length <= 0) {
-      return [];
-    }
-    return users.map(({ password, id, ...rest }) => rest as UserResponseDto);
+    return users.map(({ deleted, password, id, ...rest }) => rest as UserResponseDto);
     // Para cada usuario, devolvemos todos sus datos excepto la contraseña y el ID interno, y armamos una nueva lista solo con esos datos seguros.
   }
 
@@ -63,7 +60,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    const { password, id, ...rest } = user;
+    const { deleted, password, id, ...rest } = user;
     return rest as UserResponseDto;
   }
 
@@ -90,23 +87,21 @@ export class UsersService {
       throw new InternalServerErrorException('Usuario eliminado');
     }
 
-    const { password, id, ...rest } = updatedUser;
+    const { deleted, password, id, ...rest } = updatedUser;
     return rest as UserResponseDto;
   }
 
   async remove(uuid: string) {
-    const user = await this.userRepo.findOne({ where: { uuid } });
+    const user = await this.userRepo.findOne({ where: { uuid, deleted:false } });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
-    }
-
-    if (user.deleted) {
-      throw new BadRequestException('El usuario ya está eliminado');
     }
 
     user.deleted = true;
 
     await this.userRepo.save(user);
+
+    return 'Usuario eliminado correctamente';
 
   }
 }
