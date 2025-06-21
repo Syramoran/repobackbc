@@ -6,6 +6,7 @@ import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserResponseDto } from './dto/interfaz-resp';
+import { normalizarTelefono } from 'src/common/normalizar-telf';
 
 @Injectable()
 export class UsersService {
@@ -20,19 +21,23 @@ export class UsersService {
     if (createUserDto.email) {
       const emailExists = await this.userRepo.findOne({ where: { email: createUserDto.email } });
       if (emailExists) {
-        throw new BadRequestException('El email ya está en uso');
+        throw new BadRequestException('El usuario ya existe');
       }
     }
 
     // comprueba que el numero no esté registrado
     const numberExists = await this.userRepo.findOne({ where: { number: createUserDto.number } });
     if (numberExists) {
-      throw new BadRequestException('El número de teléfono ya corresponde a un usuario')
+      throw new BadRequestException('El usuario ya existe')
     }
 
     //encripta contraseña
     const hashedpass = await bcrypt.hash(createUserDto.password, 10);
     const dto = { ...createUserDto, password: hashedpass };
+    
+    //normalizar telefono
+    dto.number = normalizarTelefono(createUserDto.number)
+    
     // crea el usuario con repository
     try {
       const user = this.userRepo.create(dto);
@@ -62,6 +67,25 @@ export class UsersService {
     }
     const { deleted, password, id, ...rest } = user;
     return rest as UserResponseDto;
+  }
+
+  async findOneByEmail(email: string): Promise<any> {
+    const user = await this.userRepo.findOne({ where: { email , deleted: false} });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const { deleted, id, ...rest } = user;
+    return rest;
+  }
+
+  async findOneByNumber(num: string): Promise<any> {
+    const number = normalizarTelefono(num)
+    const user = await this.userRepo.findOne({ where: { number , deleted: false} });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const { deleted, id, ...rest } = user;
+    return rest;
   }
 
   //ACTUALIZAR
