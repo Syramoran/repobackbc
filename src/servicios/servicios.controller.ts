@@ -17,18 +17,18 @@ export class ServiciosController {
     return this.serviciosService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.serviciosService.findOne(+id);
+  @Get(':uuid')
+  findOne(@Param('uuid') uuid: string) {
+    return this.serviciosService.findOne(uuid);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateServicioDto: UpdateServicioDto) {
-    return this.serviciosService.update(+id, updateServicioDto);
+  @Patch(':uuid')
+  update(@Param('uuid') uuid: string, @Body() updateServicioDto: UpdateServicioDto) {
+    return this.serviciosService.update(uuid, updateServicioDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.serviciosService.remove(+id);
+  @Delete(':uuid')
+  remove(@Param('uuid') uuid: string) {
+    return this.serviciosService.remove(uuid);
   }
 }

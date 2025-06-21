@@ -17,18 +17,14 @@ export class AppointmentsController {
     return this.appointmentsService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.appointmentsService.findOne(+id);
+
+  @Patch(':uuid')
+  update(@Param('uuid') uuid: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
+    return this.appointmentsService.update(uuid, updateAppointmentDto);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
-    return this.appointmentsService.update(+id, updateAppointmentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.appointmentsService.remove(+id);
+  @Delete(':uuid')
+  remove(@Param('uuid') uuid: string) {
+    return this.appointmentsService.remove(uuid);
   }
 }
