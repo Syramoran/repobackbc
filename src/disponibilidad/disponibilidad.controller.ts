@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { DisponibilidadService } from './disponibilidad.service';
 import { CreateDisponibilidadDto } from './dto/create-disponibilidad.dto';
-import { UpdateDisponibilidadDto } from './dto/update-disponibilidad.dto';
+
 
 @Controller('disponibilidad')
 export class DisponibilidadController {
@@ -17,18 +17,13 @@ export class DisponibilidadController {
     return this.disponibilidadService.findAll();
   }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.disponibilidadService.findOne(+id);
-  // }
-
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateDisponibilidadDto: UpdateDisponibilidadDto) {
-  //   return this.disponibilidadService.update(+id, updateDisponibilidadDto);
-  // }
+  @Get('/day')
+  findAllByDay(@Body() createDisponibilidadDto: CreateDisponibilidadDto) {
+    return this.disponibilidadService.findAllByDay(createDisponibilidadDto);
+  }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.disponibilidadService.remove(+id);
+    return this.disponibilidadService.softDelete(id);
   }
 }

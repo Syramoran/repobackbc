@@ -1,0 +1,114 @@
+onst horaInicio = new Date(dto.date);
+
+    const year = horaInicio.getFullYear();
+    const month = horaInicio.getMonth();
+    const day = horaInicio.getDay();
+
+    const fecha = new Date(year, month, horaInicio.getDate()); 
+
+    const week_d = day;
+
+
+    // 1. Verificar si es feriado
+    const feriado = await this.feriadoRepo.findOne({ where: { date: fecha, deleted: false } }); 
+    if (feriado) {
+      throw new BadRequestException('No se pueden agendar turnos en feriados');
+    }
+
+    // Buscar el servicio para calcular la duración
+    const servicio = await this.servicioRepo.findOne({ where: { uuid: dto.servicio_uuid, deleted: false } });
+    if (!servicio) {
+      throw new NotFoundException('Servicio no encontrado');
+    }
+
+
+    const duracionTotal = servicio.duration_min + 30;
+    const horaFin = new Date(horaInicio);
+    horaFin.setMinutes(horaInicio.getMinutes() + duracionTotal);
+
+
+    // 2. Verificar bloques disponibles ese día
+    const bloques = await this.dispoRepo.find({ where: { week_day: week_d, deleted: false } });
+
+    const enBloque = bloques.some(b => {
+      const [b_start_hour, b_start_minute, b_start_second] = b.start.split(':').map(Number);
+      const [b_end_hour, b_end_minute, b_end_second] = b.finish.split(':').map(Number);
+
+      const blockStartTime = new Date(fecha); 
+      blockStartTime.setHours(b_start_hour, b_start_minute, b_start_second || 0, 0);
+
+      const blockEndTime = new Date(fecha); 
+      blockEndTime.setHours(b_end_hour, b_end_minute, b_end_second || 0, 0);
+
+      const result = horaInicio >= blockStartTime && horaFin <= blockEndTime;
+      return result;
+    });
+
+    if (!enBloque) {
+      throw new BadRequestException('El turno está fuera del horario disponible');
+    }
+
+    // 3. Verificar que no se superponga con otros turnos existentes ese mismo día
+    const turnos = await this.turnoRepo.find({
+      where: { deleted: false },
+      relations: ['servicio'],
+    });
+
+    const turnosMismoDia = turnos.filter(t => {
+        // Para comparar días, también necesitamos que t.date se interprete en la misma zona horaria local.
+        // O lo más seguro es comparar las partes YYYY-MM-DD de los ISO strings.
+        const turnoAgendarDiaStr = horaInicio.toISOString().split('T')[0]; // Día del turno a agendar
+        const turnoExistenteDiaStr = t.date.toISOString().split('T')[0]; // Día del turno existente
+        return turnoAgendarDiaStr === turnoExistenteDiaStr;
+    });
+  
+
+
+    const haySolapamiento = turnosMismoDia.some(t => {
+      const iniExistente = new Date(t.date);
+      const finExistente = new Date(iniExistente);
+      const duracionExistente = t.servicio ? (t.servicio.duration_min + 30) : 30;
+      finExistente.setMinutes(iniExistente.getMinutes() + duracionExistente);
+
+      const solapa = horaInicio < finExistente && horaFin > iniExistente;
+
+      if (solapa) {
+        console.log(`  ¡Solapamiento detectado! Turno a agendar [${horaInicio.toLocaleTimeString()} - ${horaFin.toLocaleTimeString()}] ` +
+                    `se solapa con turno existente [${iniExistente.toLocaleTimeString()} - ${finExistente.toLocaleTimeString()}] (UUID: ${t.uuid})`);
+      }
+      return solapa;
+    });
+
+    if (haySolapamiento) {
+      console.log('Error: Ya existe un turno que se superpone en este horario.');
+      throw new BadRequestException('Ya existe un turno en ese horario');
+    }
+    console.log('Verificación de solapamiento de turnos: OK.');
+
+
+    // Si pasó todas las validaciones, guardar el turno
+    console.log('Todas las validaciones pasaron. Procediendo a guardar el turno.');
+
+    const usuario = await this.userRepo.findOne({ where: { uuid: dto.user_uuid } });
+    if (!usuario) {
+      console.log('Error: Usuario no encontrado para UUID:', dto.user_uuid);
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    console.log('Usuario encontrado:', usuario.name);
+
+    const nuevoTurno = this.turnoRepo.create({
+      ...dto,
+      user: usuario,
+      servicio: servicio,
+    });
+
+    try {
+      const guardado = await this.turnoRepo.save(nuevoTurno);
+      console.log('Turno guardado exitosamente. UUID:', guardado.uuid);
+      const { id, deleted, ...rest } = guardado;
+      console.log('--- Fin de Validación de Turno (Éxito) ---');
+      return rest;
+    } catch (error) {
+      console.error('Error al guardar el turno:', error);
+      throw new InternalServerErrorException('No se pudo guardar el turno');
+    }

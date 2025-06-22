@@ -4,6 +4,7 @@ import { UpdateDisponibilidadDto } from './dto/update-disponibilidad.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Disponibility } from './entities/disponibilidad.entity';
 import { Repository } from 'typeorm';
+import { Days } from 'src/common/enum-days';
 
 @Injectable()
 export class DisponibilidadService {
@@ -14,10 +15,11 @@ export class DisponibilidadService {
 
   async create(createDisponibilidadDto: CreateDisponibilidadDto) {
     const dto = createDisponibilidadDto
-    const bloques = await this.dispoRepo.find({ where: { deleted: false, week_day: dto.week_day } });
+    const bloques = await this.dispoRepo.find({ where: { week_day: Number(dto.week_day) } });
+
 
     const haySolapamiento = bloques.some(b =>
-      dto.start < b.finish && dto.finish > b.start
+      dto.start <= b.finish && dto.finish >= b.start
     );
     //Revisá todos los bloques que ya existen ese día. Si al menos uno tiene un horario que se cruza con el nuevo bloque que querés crear, entonces hay solapamiento.
     //El inicio del nuevo bloque (dto.start) es antes del final de uno existente (b.finish), y
@@ -30,7 +32,7 @@ export class DisponibilidadService {
       const bloque = this.dispoRepo.create(createDisponibilidadDto)
       const guardado = await this.dispoRepo.save(bloque)
 
-      const { deleted, ...rest } = guardado;
+      const { deletedAt, ...rest } = guardado;
       return rest
     } catch (error) {
       throw new InternalServerErrorException('No se pudo crear el bloque de disponibilidad');
@@ -38,26 +40,33 @@ export class DisponibilidadService {
   }
 
   async findAll() {
-    const bloques = await this.dispoRepo.find({ where: { deleted: false } });
+    const bloques = await this.dispoRepo.find();
 
-    return bloques.map(({ deleted, ...rest }) => rest); // si bloques esta vacío devuelve []
+    return bloques.map(({ deletedAt, ...rest }) => rest); // si bloques esta vacío devuelve []
   }
 
   async findAllByDay(dto: CreateDisponibilidadDto) {
-    const bloques = await this.dispoRepo.find({ where: { deleted: false, week_day: dto.week_day } });
+    const bloques = await this.dispoRepo.find({ where: { week_day: dto.week_day } });
 
-    return bloques.map(({ deleted, ...rest }) => rest); // si bloques esta vacío devuelve []
+    return bloques.map(({ deletedAt, ...rest }) => rest); // si bloques esta vacío devuelve []
   }
 
-  async remove(id: number) {
-    const bloque = await this.dispoRepo.findOne({ where: { id , deleted:false} });
-    if (!bloque) {
-      throw new NotFoundException('Bloque disponible no encontrado');
+  // async verBloques(dto: CreateDisponibilidadDto) {
+  //   const bloques = await this.dispoRepo.find();
+  //   console.log("Valor de week_day para buscar:", dto.week_day); // ¡Agrega esto!
+  //   const bloquesMismoDia = await this.dispoRepo.findBy({
+  //     week_day: Number(dto.week_day),
+  //   });
+  //   console.log("bloques:", bloques)
+  //   console.log("bloques mismo dia:", bloquesMismoDia)
+  // }
+
+  async softDelete(id: string): Promise<any> {
+    // softDelete() actualiza la columna deletedAt
+    const result = await this.dispoRepo.softDelete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`SomeEntity with ID "${id}" not found.`);
     }
-
-    bloque.deleted = true;
-
-    await this.dispoRepo.save(bloque);
-    return 'Bloque de tiempo disponible eliminado correctamente'
+    return result;
   }
 }

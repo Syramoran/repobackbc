@@ -12,23 +12,23 @@ export class ServiciosController {
     return this.serviciosService.create(createServicioDto);
   }
 
-  @Get()
-  findAll() {
-    return this.serviciosService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.serviciosService.findAll();
+  // }
 
-  @Get(':uuid')
-  findOne(@Param('uuid') uuid: string) {
-    return this.serviciosService.findOne(uuid);
-  }
+  // @Get(':uuid')
+  // findOne(@Param('uuid') uuid: string) {
+  //   return this.serviciosService.findOne(uuid);
+  // }
 
-  @Patch(':uuid')
-  update(@Param('uuid') uuid: string, @Body() updateServicioDto: UpdateServicioDto) {
-    return this.serviciosService.update(uuid, updateServicioDto);
-  }
+  // @Patch(':uuid')
+  // update(@Param('uuid') uuid: string, @Body() updateServicioDto: UpdateServicioDto) {
+  //   return this.serviciosService.update(uuid, updateServicioDto);
+  // }
 
   @Delete(':uuid')
   remove(@Param('uuid') uuid: string) {
-    return this.serviciosService.remove(uuid);
+    return this.serviciosService.softDelete(uuid);
   }
 }

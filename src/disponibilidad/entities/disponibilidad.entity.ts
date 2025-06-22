@@ -1,7 +1,8 @@
 import {
   Entity,
   PrimaryGeneratedColumn,
-  Column
+  Column,
+  DeleteDateColumn
 } from 'typeorm';
 import { Days } from 'src/common/enum-days';
 
@@ -19,7 +20,7 @@ export class Disponibility {
   @Column({ type: 'time' })
   finish: string;
 
-  @Column({ type: 'boolean', default: false })
-  deleted: boolean;
+  @DeleteDateColumn()
+  deletedAt: Date;
 
 }

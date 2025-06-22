@@ -3,5 +3,5 @@ export class UserResponseDto {
   name: string;
   email: string;
   number: string;
-  admin: boolean;
+  rol: string;
 }

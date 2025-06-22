@@ -2,6 +2,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  DeleteDateColumn,
 } from 'typeorm';
 
 @Entity('feriados')
@@ -18,7 +19,7 @@ export class Feriado {
   @Column({ type: 'boolean', default: false })
   anual: boolean;
 
-  @Column({ type: 'boolean', default: false })
-  deleted: boolean;
+  @DeleteDateColumn()
+  deletedAt: Date;
 
 }

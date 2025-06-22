@@ -18,53 +18,50 @@ export class ServiciosService {
       const servicio = this.servicioRepo.create(createServicioDto)
       const guardado = await this.servicioRepo.save(servicio)
 
-      const { deleted, id, ...rest } = guardado;
+      const { deletedAt, id, ...rest } = guardado;
       return rest
     } catch (error) {
       throw new InternalServerErrorException('No se pudo crear el servicio');
     }
   }
 
-  async findAll(): Promise<any[]> {
-    const servicios = await this.servicioRepo.find({ where: { deleted: false } });
-    return servicios.map(({ deleted, id, ...rest }) => rest);
-  }
+  // async findAll(): Promise<any[]> {
+  //   const servicios = await this.servicioRepo.find({ where: { deleted: false } });
+  //   return servicios.map(({ deleted, id, ...rest }) => rest);
+  // }
 
-  async findOne(uuid: string): Promise<any> {
-    const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted: false } });
-    if (!servicio) {
-      throw new NotFoundException('Servicio no encontrado');
+  // async findOne(uuid: string): Promise<any> {
+  //   const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted: false } });
+  //   if (!servicio) {
+  //     throw new NotFoundException('Servicio no encontrado');
+  //   }
+  //   const { deleted, id, ...rest } = servicio;
+  //   return rest;
+  // }
+
+  // async update(uuid: string, updateServicioDto: UpdateServicioDto) {
+  //   const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted : false } });
+  //   if (!servicio) {
+  //     throw new NotFoundException('Servicio no encontrado');
+  //   }
+
+  //   await this.servicioRepo.update(servicio.id, updateServicioDto);
+  //   const actualizado = await this.servicioRepo.findOne({ where: { id: servicio.id } });
+
+  //   if (!actualizado) {
+  //     throw new NotFoundException('Servicio actualizado no encontrado');
+  //   }
+
+  //   const { id, deleted, ...rest } = actualizado;
+  //   return rest;
+  // }
+
+   async softDelete(uuid: string): Promise<any> {
+    // softDelete() actualiza la columna deletedAt
+    const result = await this.servicioRepo.softDelete(uuid);
+    if (result.affected === 0) {
+      throw new NotFoundException(`SomeEntity with ID "${uuid}" not found.`);
     }
-    const { deleted, id, ...rest } = servicio;
-    return rest;
-  }
-
-  async update(uuid: string, updateServicioDto: UpdateServicioDto) {
-    const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted : false } });
-    if (!servicio) {
-      throw new NotFoundException('Servicio no encontrado');
-    }
-
-    await this.servicioRepo.update(servicio.id, updateServicioDto);
-    const actualizado = await this.servicioRepo.findOne({ where: { id: servicio.id } });
-
-    if (!actualizado) {
-      throw new NotFoundException('Servicio actualizado no encontrado');
-    }
-
-    const { id, deleted, ...rest } = actualizado;
-    return rest;
-  }
-
-  async remove(uuid: string) {
-    const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted:false} });
-    if (!servicio) {
-      throw new NotFoundException('Servicio no encontrado');
-    }
-
-    servicio.deleted = true;
-
-    await this.servicioRepo.save(servicio);
-    return 'Servicio eliminado'
+    return result;
   }
 }

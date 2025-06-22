@@ -32,10 +32,13 @@ export class AuthService {
         }
 
         const payload = {
-            email: user.email
+            email: user.email,
+            number: user.number,
+            rol: user.rol,
+            uuid: user.uuid
         }
         const token = await this.jwtService.signAsync(payload)
-        return {token, email};
+        return {token, payload};
     }
 
     async register(dto: CreateUserDto) {

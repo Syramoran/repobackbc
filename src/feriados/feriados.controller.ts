@@ -5,30 +5,30 @@ import { UpdateFeriadoDto } from './dto/update-feriado.dto';
 
 @Controller('feriados')
 export class FeriadosController {
-  constructor(private readonly feriadosService: FeriadosService) {}
+  // constructor(private readonly feriadosService: FeriadosService) {}
 
-  @Post()
-  create(@Body() createFeriadoDto: CreateFeriadoDto) {
-    return this.feriadosService.create(createFeriadoDto);
-  }
+  // @Post()
+  // create(@Body() createFeriadoDto: CreateFeriadoDto) {
+  //   return this.feriadosService.create(createFeriadoDto);
+  // }
 
-  @Get()
-  findAll() {
-    return this.feriadosService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.feriadosService.findAll();
+  // }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.feriadosService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.feriadosService.findOne(+id);
+  // }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateFeriadoDto: UpdateFeriadoDto) {
-    return this.feriadosService.update(+id, updateFeriadoDto);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateFeriadoDto: UpdateFeriadoDto) {
+  //   return this.feriadosService.update(+id, updateFeriadoDto);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.feriadosService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.feriadosService.remove(+id);
+  // }
 }

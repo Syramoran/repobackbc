@@ -7,11 +7,13 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserResponseDto } from './dto/interfaz-resp';
 import { normalizarTelefono } from 'src/common/normalizar-telf';
+import { Appointment } from 'src/appointments/entities/appointment.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Appointment) private readonly turnoRepo: Repository<Appointment>,
   ) { }
 
   // CREAR USUARIO 
@@ -26,7 +28,8 @@ export class UsersService {
     }
 
     // comprueba que el numero no esté registrado
-    const numberExists = await this.userRepo.findOne({ where: { number: createUserDto.number } });
+    const numeroNormalizado = normalizarTelefono(createUserDto.number)
+    const numberExists = await this.userRepo.findOne({ where: { number: numeroNormalizado } });
     if (numberExists) {
       throw new BadRequestException('El usuario ya existe')
     }
@@ -34,19 +37,20 @@ export class UsersService {
     //encripta contraseña
     const hashedpass = await bcrypt.hash(createUserDto.password, 10);
     const dto = { ...createUserDto, password: hashedpass };
-    
+
     //normalizar telefono
-    dto.number = normalizarTelefono(createUserDto.number)
-    
+    dto.number = numeroNormalizado
+
     // crea el usuario con repository
     try {
       const user = this.userRepo.create(dto);
       const guardado = await this.userRepo.save(user);
 
-      const { password, id, deleted, ...rest } = guardado;
+      const { password, id, deletedAt, ...rest } = guardado;
       return rest as UserResponseDto;
 
     } catch (error) {
+      console.log(error);
       throw new InternalServerErrorException('No se pudo crear el usuario');
     }
 
@@ -54,78 +58,90 @@ export class UsersService {
 
   }
 
-  async findAll(): Promise<UserResponseDto[]> {
-    const users = await this.userRepo.find({ where: { deleted: false } });
-    return users.map(({ deleted, password, id, ...rest }) => rest as UserResponseDto);
-    // Para cada usuario, devolvemos todos sus datos excepto la contraseña y el ID interno, y armamos una nueva lista solo con esos datos seguros.
-  }
+  // async findAll(): Promise<UserResponseDto[]> {
+  //   const users = await this.userRepo.find({ where: { deleted: false } });
+  //   return users.map(({ deleted, password, id, ...rest }) => rest as UserResponseDto);
+  //   // Para cada usuario, devolvemos todos sus datos excepto la contraseña y el ID interno, y armamos una nueva lista solo con esos datos seguros.
+  // }
 
-  async findOne(uuid: string): Promise<UserResponseDto> {
-    const user = await this.userRepo.findOne({ where: { uuid , deleted: false} });
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-    const { deleted, password, id, ...rest } = user;
-    return rest as UserResponseDto;
-  }
+  // async findOne(uuid: string): Promise<UserResponseDto> {
+  //   const user = await this.userRepo.findOne({ where: { uuid, deleted: false } });
+  //   if (!user) {
+  //     throw new NotFoundException('Usuario no encontrado');
+  //   }
+  //   const { deleted, password, id, ...rest } = user;
+  //   return rest as UserResponseDto;
+  // }
 
   async findOneByEmail(email: string): Promise<any> {
-    const user = await this.userRepo.findOne({ where: { email , deleted: false} });
+    const user = await this.userRepo.findOne({ where: { email} });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    const { deleted, id, ...rest } = user;
+    const { deletedAt, id, ...rest } = user;
     return rest;
   }
 
   async findOneByNumber(num: string): Promise<any> {
     const number = normalizarTelefono(num)
-    const user = await this.userRepo.findOne({ where: { number , deleted: false} });
+    const user = await this.userRepo.findOne({ where: { number} });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    const { deleted, id, ...rest } = user;
+    const { deletedAt, id, ...rest } = user;
     return rest;
   }
 
-  //ACTUALIZAR
-  async update(uuid: string, updateDto: UpdateUserDto): Promise<UserResponseDto> {
+  // async findAllAppointments(uuid: string) {
+  //   const user = await this.userRepo.findOne({ where: { uuid, deleted: false } });
+  //   if (!user) {
+  //     throw new NotFoundException('Usuario no encontrado');
+  //   }
+  //   const turnos = await this.turnoRepo.find({
+  //     where: { user, deleted: false },
+  //     relations: ['servicio'],
+  //     order: { date: 'ASC' },
+  //   });
 
-    // buscar usuario a actualizar
-    const user = await this.userRepo.findOne({ where: { uuid , deleted : false} })
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+  //   return turnos.map(({ id, deleted, ...rest }) => rest);
+  // }
+
+  // async update(uuid: string, updateDto: UpdateUserDto): Promise<UserResponseDto> {
+
+  //   // buscar usuario a actualizar
+  //   const user = await this.userRepo.findOne({ where: { uuid, deleted: false } })
+  //   if (!user) {
+  //     throw new NotFoundException('Usuario no encontrado');
+  //   }
+
+  //   // hashea la nueva contraseña si se editó
+  //   if (updateDto.password) {
+  //     updateDto.password = await bcrypt.hash(updateDto.password, 10);
+  //   }
+
+  //   //actualizar
+  //   await this.userRepo.update(user.id, updateDto);
+
+  //   //buscar usuario actualizado para devolverlo
+  //   const updatedUser = await this.userRepo.findOne({ where: { id: user.id, deleted: false } });
+  //   if (!updatedUser) {
+  //     throw new InternalServerErrorException('Usuario eliminado');
+  //   }
+
+  //   const { deleted, password, id, ...rest } = updatedUser;
+  //   return rest as UserResponseDto;
+  // }
+
+   async softDelete(uuid: string): Promise<any> {
+    // softDelete() actualiza la columna deletedAt
+    const user = await this.userRepo.findOne({where: {uuid}})
+    if (!user){
+      throw new NotFoundException('usuario no hallado')
     }
-
-    // hashea la nueva contraseña si se editó
-    if (updateDto.password) {
-      updateDto.password = await bcrypt.hash(updateDto.password, 10);
+    const result = await this.userRepo.softDelete(user?.id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`SomeEntity with ID "${uuid}" not found.`);
     }
-
-    //actualizar
-    await this.userRepo.update(user.id, updateDto);
-
-    //buscar usuario actualizado para devolverlo
-    const updatedUser = await this.userRepo.findOne({ where: { id: user.id, deleted : false } });
-    if (!updatedUser) {
-      throw new InternalServerErrorException('Usuario eliminado');
-    }
-
-    const { deleted, password, id, ...rest } = updatedUser;
-    return rest as UserResponseDto;
-  }
-
-  async remove(uuid: string) {
-    const user = await this.userRepo.findOne({ where: { uuid, deleted:false } });
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    user.deleted = true;
-
-    await this.userRepo.save(user);
-
-    return 'Usuario eliminado correctamente';
-
+    return result;
   }
 }
