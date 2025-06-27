@@ -24,10 +24,10 @@ app.use(helmet());
     optionsSuccessStatus: 204,
   });
 
-  
-  await app.listen(process.env.PORT ?? 3000);
   console.log('URL DB:', process.env.DATABASE_URL);
 
+  await app.listen(process.env.PORT ?? 3000);
+  
 
 }
 bootstrap();
