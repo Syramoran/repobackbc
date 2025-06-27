@@ -10,7 +10,6 @@ import { FeriadosModule } from './feriados/feriados.module';
 import { ServiciosModule } from './servicios/servicios.module';
 import { DisponibilidadModule } from './disponibilidad/disponibilidad.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { typeOrmConfig } from './config/typeorm.config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -58,4 +57,6 @@ import { APP_GUARD } from '@nestjs/core';
     }
   ],
 })
-export class AppModule { }
+export class AppModule { 
+  
+}
