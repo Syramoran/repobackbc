@@ -24,10 +24,15 @@ app.use(helmet());
     optionsSuccessStatus: 204,
   });
 
+<<<<<<< HEAD
   
+=======
+>>>>>>> e53ad1e21d8bc26b4765374d1e89e0e2fd2e3a4e
   console.log('URL DB:', process.env.DATABASE_URL);
   await app.listen(process.env.PORT ?? 3000);
 
+  await app.listen(process.env.PORT ?? 3000);
+  
 
 }
 bootstrap();
