@@ -52,11 +52,22 @@ export class AppointmentsService {
     const duracionServicio = servicio.duration_min + 30;
 
     // CALCULAR HORA FINAL TURNO LOCAL
-    const [h, m, s] = horaLocal.split(':').map(Number);
-    const finDate = new Date();
-    finDate.setHours(h, m + duracionServicio, s); // suma duracion del servicio
-    const horaLocalFin = finDate.toTimeString().split(' ')[0]; // "HH:MM:SS"
-    ;
+const [h, m, s] = horaLocal.split(':').map(Number);
+
+// Crear fecha base desde dateUTC para mantener día correcto
+const finDate = new Date(dateUTC);
+finDate.setHours(h, m + duracionServicio, s); // suma duración al minuto
+
+// Obtener hora final en hora argentina con Intl
+const horaLocalFin = new Intl.DateTimeFormat('es-AR', {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+  timeZone: 'America/Argentina/Buenos_Aires'
+}).format(finDate);
+
+
     //Verificar si es feriado
     const soloFecha = dateUTC.toISOString().split('T')[0];
     const feriado = await this.feriadoRepo.findOne({ where: { date: soloFecha } });
