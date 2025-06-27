@@ -3,40 +3,35 @@ import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
+import { CanAccessUserGuard } from 'src/auth/guards/can-access.guard';
+import { AdminAccessGuard } from 'src/auth/guards/admin-access.guard';
 @Controller('appointments')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) { }
 
   @Post()
-  // @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, CanAccessUserGuard)
   create(@Body() createAppointmentDto: CreateAppointmentDto,  @Req() req) {
-    // const isSameUser = createAppointmentDto.user_uuid === req.user.uuid;
-    
-    // if (!isSameUser){throw new UnauthorizedException('No podés crear turnos para otros usuarios');}
     
     return this.appointmentsService.create(createAppointmentDto);
   }
 
   @Get()
+    @UseGuards(AuthGuard,AdminAccessGuard)
   findAll() {
     return this.appointmentsService.findAll();
   }
 
 
   @Patch(':uuid')
+    @UseGuards(AuthGuard, CanAccessUserGuard)
   update(@Param('uuid') uuid: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
     return this.appointmentsService.update(uuid, updateAppointmentDto);
   }
 
   @Delete(':uuid')
+    @UseGuards(AuthGuard, CanAccessUserGuard)
   async remove(@Param('uuid') uuid: string, @Req() req) {
-  //   const turno = await this.appointmentsService.findOne(uuid);
-
-  //   const isOwner = turno.user.uuid === req.user.uuid;
-  //   const isAdmin = req.user.rol === 'admin'
-    
-  //   if (!isOwner && !isAdmin){throw new UnauthorizedException('No podés borrar turnos de otros usuarios');}
-  
     return this.appointmentsService.softDelete(uuid);
   }
 }
