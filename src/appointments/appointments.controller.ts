@@ -17,19 +17,19 @@ export class AppointmentsController {
     return this.appointmentsService.create(createAppointmentDto);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.appointmentsService.findAll();
-  // }
+  @Get()
+  findAll() {
+    return this.appointmentsService.findAll();
+  }
 
 
-  // @Patch(':uuid')
-  // update(@Param('uuid') uuid: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
-  //   return this.appointmentsService.update(uuid, updateAppointmentDto);
-  // }
+  @Patch(':uuid')
+  update(@Param('uuid') uuid: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
+    return this.appointmentsService.update(uuid, updateAppointmentDto);
+  }
 
-  // @Delete(':uuid')
-  // async remove(@Param('uuid') uuid: string, @Req() req) {
+  @Delete(':uuid')
+  async remove(@Param('uuid') uuid: string, @Req() req) {
   //   const turno = await this.appointmentsService.findOne(uuid);
 
   //   const isOwner = turno.user.uuid === req.user.uuid;
@@ -37,6 +37,6 @@ export class AppointmentsController {
     
   //   if (!isOwner && !isAdmin){throw new UnauthorizedException('No podés borrar turnos de otros usuarios');}
   
-  //   return this.appointmentsService.remove(uuid);
-  // }
+    return this.appointmentsService.softDelete(uuid);
+  }
 }

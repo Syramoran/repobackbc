@@ -1,7 +1,7 @@
 import { IsBoolean, IsDate, IsDateString, IsNotEmpty, IsString } from "class-validator";
 
 export class CreateFeriadoDto {
-    @IsDateString()
+    @IsString()
     @IsNotEmpty()
     date: string;
 

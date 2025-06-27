@@ -58,20 +58,20 @@ export class UsersService {
 
   }
 
-  // async findAll(): Promise<UserResponseDto[]> {
-  //   const users = await this.userRepo.find({ where: { deleted: false } });
-  //   return users.map(({ deleted, password, id, ...rest }) => rest as UserResponseDto);
-  //   // Para cada usuario, devolvemos todos sus datos excepto la contraseña y el ID interno, y armamos una nueva lista solo con esos datos seguros.
-  // }
+  async findAll(): Promise<UserResponseDto[]> {
+    const users = await this.userRepo.find();
+    return users.map(({ deletedAt, password, id, ...rest }) => rest as UserResponseDto);
+    // Para cada usuario, devolvemos todos sus datos excepto la contraseña y el ID interno, y armamos una nueva lista solo con esos datos seguros.
+  }
 
-  // async findOne(uuid: string): Promise<UserResponseDto> {
-  //   const user = await this.userRepo.findOne({ where: { uuid, deleted: false } });
-  //   if (!user) {
-  //     throw new NotFoundException('Usuario no encontrado');
-  //   }
-  //   const { deleted, password, id, ...rest } = user;
-  //   return rest as UserResponseDto;
-  // }
+  async findOne(uuid: string): Promise<UserResponseDto> {
+    const user = await this.userRepo.findOne({ where: { uuid } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const { deletedAt, password, id, ...rest } = user;
+    return rest as UserResponseDto;
+  }
 
   async findOneByEmail(email: string): Promise<any> {
     const user = await this.userRepo.findOne({ where: { email} });
@@ -92,45 +92,45 @@ export class UsersService {
     return rest;
   }
 
-  // async findAllAppointments(uuid: string) {
-  //   const user = await this.userRepo.findOne({ where: { uuid, deleted: false } });
-  //   if (!user) {
-  //     throw new NotFoundException('Usuario no encontrado');
-  //   }
-  //   const turnos = await this.turnoRepo.find({
-  //     where: { user, deleted: false },
-  //     relations: ['servicio'],
-  //     order: { date: 'ASC' },
-  //   });
+  async findAllAppointments(uuid: string) {
+    const user = await this.userRepo.findOne({ where: { uuid} });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    const turnos = await this.turnoRepo.find({
+      where: { user},
+      relations: ['servicio'],
+      order: { date: 'ASC' },
+    });
 
-  //   return turnos.map(({ id, deleted, ...rest }) => rest);
-  // }
+    return turnos.map(({ id, deletedAt, ...rest }) => rest);
+  }
 
-  // async update(uuid: string, updateDto: UpdateUserDto): Promise<UserResponseDto> {
+  async update(uuid: string, updateDto: UpdateUserDto): Promise<UserResponseDto> {
 
-  //   // buscar usuario a actualizar
-  //   const user = await this.userRepo.findOne({ where: { uuid, deleted: false } })
-  //   if (!user) {
-  //     throw new NotFoundException('Usuario no encontrado');
-  //   }
+    // buscar usuario a actualizar
+    const user = await this.userRepo.findOne({ where: { uuid } })
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
 
-  //   // hashea la nueva contraseña si se editó
-  //   if (updateDto.password) {
-  //     updateDto.password = await bcrypt.hash(updateDto.password, 10);
-  //   }
+    // hashea la nueva contraseña si se editó
+    if (updateDto.password) {
+      updateDto.password = await bcrypt.hash(updateDto.password, 10);
+    }
 
-  //   //actualizar
-  //   await this.userRepo.update(user.id, updateDto);
+    //actualizar
+    await this.userRepo.update(user.id, updateDto);
 
-  //   //buscar usuario actualizado para devolverlo
-  //   const updatedUser = await this.userRepo.findOne({ where: { id: user.id, deleted: false } });
-  //   if (!updatedUser) {
-  //     throw new InternalServerErrorException('Usuario eliminado');
-  //   }
+    //buscar usuario actualizado para devolverlo
+    const updatedUser = await this.userRepo.findOne({ where: { id: user.id } });
+    if (!updatedUser) {
+      throw new InternalServerErrorException('Usuario eliminado');
+    }
 
-  //   const { deleted, password, id, ...rest } = updatedUser;
-  //   return rest as UserResponseDto;
-  // }
+    const { deletedAt, password, id, ...rest } = updatedUser;
+    return rest as UserResponseDto;
+  }
 
    async softDelete(uuid: string): Promise<any> {
     // softDelete() actualiza la columna deletedAt

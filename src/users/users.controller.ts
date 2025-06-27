@@ -15,46 +15,46 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.usersService.findAll();
-  // }
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
 
-  // @Get('appointments/:uuid')
+  @Get('appointments/:uuid')
   // @UseGuards(AuthGuard)
-  // findAllAppointments(@Param('uuid') uuid: string, @Req() req){
-  //   const user = req.user;
-  //   if (!user.admin && user.uuid !== uuid) {
-  //     throw new ForbiddenException('No tiene permiso para ver los turnos de otra persona');
-  //   }
+  findAllAppointments(@Param('uuid') uuid: string, @Req() req){
+    // const user = req.user;
+    // if (!user.admin && user.uuid !== uuid) {
+    //   throw new ForbiddenException('No tiene permiso para ver los turnos de otra persona');
+    // }
 
-  //   return this.usersService.findAllAppointments(uuid);
-  // }
+    return this.usersService.findAllAppointments(uuid);
+  }
 
-  // @Get(':uuid')
+  @Get(':uuid')
   // @UseGuards(AuthGuard)
-  // findOne(@Param('uuid') uuid: string, @Req() req) {
-  //   const user = req.user;
+  findOne(@Param('uuid') uuid: string, @Req() req) {
+    // const user = req.user;
 
-  //   if (!user.admin && user.uuid !== uuid) {
-  //     throw new ForbiddenException('No tiene permiso para ver este perfil');
-  //   }
+    // if (!user.admin && user.uuid !== uuid) {
+    //   throw new ForbiddenException('No tiene permiso para ver este perfil');
+    // }
 
-  //   return this.usersService.findOne(uuid);
-  // }
+    return this.usersService.findOne(uuid);
+  }
 
-  // @Patch(':uuid')
+  @Patch(':uuid')
   // @UseGuards(AuthGuard)
-  // update(@Param('uuid') uuid: string, @Body() updateUserDto: UpdateUserDto, @Req() req) {
+  update(@Param('uuid') uuid: string, @Body() updateUserDto: UpdateUserDto, @Req() req) {
     
-  //   const user = req.user;
+    // const user = req.user;
 
-  //   if (!user.admin && user.uuid !== uuid) {
-  //     throw new ForbiddenException('No tiene permiso para editar este perfil');
-  //   }
+    // if (!user.admin && user.uuid !== uuid) {
+    //   throw new ForbiddenException('No tiene permiso para editar este perfil');
+    // }
     
-  //   return this.usersService.update(uuid, updateUserDto);
-  // }
+    return this.usersService.update(uuid, updateUserDto);
+  }
 
   @Delete(':uuid')
   remove(@Param('uuid') uuid: string) {

@@ -5,8 +5,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Servicio } from './entities/servicio.entity';
 import { Repository } from 'typeorm';
 
-//FALTA HACER UNA INTERFAZ DE RESPUESTAS
-
 @Injectable()
 export class ServiciosService {
   constructor(
@@ -25,42 +23,46 @@ export class ServiciosService {
     }
   }
 
-  // async findAll(): Promise<any[]> {
-  //   const servicios = await this.servicioRepo.find({ where: { deleted: false } });
-  //   return servicios.map(({ deleted, id, ...rest }) => rest);
-  // }
+  async findAll(): Promise<any[]> {
+    const servicios = await this.servicioRepo.find();
+    return servicios.map(({ deletedAt, id, ...rest }) => rest);
+  }
 
-  // async findOne(uuid: string): Promise<any> {
-  //   const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted: false } });
-  //   if (!servicio) {
-  //     throw new NotFoundException('Servicio no encontrado');
-  //   }
-  //   const { deleted, id, ...rest } = servicio;
-  //   return rest;
-  // }
+  async findOne(uuid: string): Promise<any> {
+    const servicio = await this.servicioRepo.findOne({ where: { uuid} });
+    if (!servicio) {
+      throw new NotFoundException('Servicio no encontrado');
+    }
+    const { deletedAt, id, ...rest } = servicio;
+    return rest;
+  }
 
-  // async update(uuid: string, updateServicioDto: UpdateServicioDto) {
-  //   const servicio = await this.servicioRepo.findOne({ where: { uuid, deleted : false } });
-  //   if (!servicio) {
-  //     throw new NotFoundException('Servicio no encontrado');
-  //   }
+  async update(uuid: string, updateServicioDto: UpdateServicioDto) {
+    const servicio = await this.servicioRepo.findOne({ where: { uuid } });
+    if (!servicio) {
+      throw new NotFoundException('Servicio no encontrado');
+    }
 
-  //   await this.servicioRepo.update(servicio.id, updateServicioDto);
-  //   const actualizado = await this.servicioRepo.findOne({ where: { id: servicio.id } });
+    await this.servicioRepo.update(servicio.id, updateServicioDto);
+    const actualizado = await this.servicioRepo.findOne({ where: { id: servicio.id } });
 
-  //   if (!actualizado) {
-  //     throw new NotFoundException('Servicio actualizado no encontrado');
-  //   }
+    if (!actualizado) {
+      throw new NotFoundException('Servicio actualizado no encontrado');
+    }
 
-  //   const { id, deleted, ...rest } = actualizado;
-  //   return rest;
-  // }
+    const { id, deletedAt, ...rest } = actualizado;
+    return rest;
+  }
 
    async softDelete(uuid: string): Promise<any> {
     // softDelete() actualiza la columna deletedAt
-    const result = await this.servicioRepo.softDelete(uuid);
+    const servicio = await this.servicioRepo.findOne({where: {uuid}})
+    if (!servicio){
+      throw new NotFoundException('servicio no hallado')
+    }
+    const result = await this.servicioRepo.softDelete(servicio?.id);
     if (result.affected === 0) {
-      throw new NotFoundException(`SomeEntity with ID "${uuid}" not found.`);
+      throw new NotFoundException(`Servicio con ID "${uuid}" no fue encontrado.`);
     }
     return result;
   }

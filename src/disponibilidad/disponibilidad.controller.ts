@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { DisponibilidadService } from './disponibilidad.service';
 import { CreateDisponibilidadDto } from './dto/create-disponibilidad.dto';
+import { UpdateDisponibilidadDto } from './dto/update-disponibilidad.dto';
 
 
 @Controller('disponibilidad')
@@ -17,9 +18,9 @@ export class DisponibilidadController {
     return this.disponibilidadService.findAll();
   }
 
-  @Get('/day')
-  findAllByDay(@Body() createDisponibilidadDto: CreateDisponibilidadDto) {
-    return this.disponibilidadService.findAllByDay(createDisponibilidadDto);
+  @Get('/day/:id')
+  findAllByDay(@Param('id') id: number) {
+    return this.disponibilidadService.findAllByDay(id);
   }
 
   @Delete(':id')

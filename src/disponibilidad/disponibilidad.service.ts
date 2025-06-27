@@ -45,8 +45,8 @@ export class DisponibilidadService {
     return bloques.map(({ deletedAt, ...rest }) => rest); // si bloques esta vacío devuelve []
   }
 
-  async findAllByDay(dto: CreateDisponibilidadDto) {
-    const bloques = await this.dispoRepo.find({ where: { week_day: dto.week_day } });
+  async findAllByDay(day:any) {
+    const bloques = await this.dispoRepo.find({ where: { week_day: day } });
 
     return bloques.map(({ deletedAt, ...rest }) => rest); // si bloques esta vacío devuelve []
   }
