@@ -32,8 +32,16 @@ export class AppointmentsService {
     const diaUTC = mapDayToEnum(dateUTC.getDay());
 
 
+
     // HORA DE TURNO LOCAL
-    const horaLocal = dateUTC.toTimeString().split(' ')[0];
+    // const horaLocal = dateUTC.toTimeString().split(' ')[0];
+    const horaLocal = new Intl.DateTimeFormat('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'America/Argentina/Buenos_Aires'
+    }).format(dateUTC);
 
 
     //SERVICIO
@@ -48,7 +56,7 @@ export class AppointmentsService {
     const finDate = new Date();
     finDate.setHours(h, m + duracionServicio, s); // suma duracion del servicio
     const horaLocalFin = finDate.toTimeString().split(' ')[0]; // "HH:MM:SS"
-;
+    ;
     //Verificar si es feriado
     const soloFecha = dateUTC.toISOString().split('T')[0];
     const feriado = await this.feriadoRepo.findOne({ where: { date: soloFecha } });
@@ -117,84 +125,91 @@ export class AppointmentsService {
   }
 
   async update(uuid: string, dto: UpdateAppointmentDto): Promise<any> {
-  const turno = await this.turnoRepo.findOne({
-    where: { uuid },
-    relations: ['servicio'],
-  });
-
-  if (!turno) {
-    throw new NotFoundException('Turno no encontrado');
-  }
-
-  // Solo si llega una nueva fecha
-  if (dto.date) {
-    const dateUTC = dto.date;
-    console.log('dateUTC:', dateUTC);
-
-    //Verificar si es feriado
-    const soloFecha = dateUTC.toISOString().split('T')[0];
-    const feriado = await this.feriadoRepo.findOne({ where: { date: soloFecha } });
-    if (feriado) {
-      throw new BadRequestException('No se pueden agendar turnos en feriados');
-    }
-
-    const diaUTC = mapDayToEnum(dateUTC.getDay());
-    console.log('dia utc:', diaUTC);
-
-    const horaLocal = dateUTC.toTimeString().split(' ')[0];
-    console.log('hora local:', horaLocal);
-
-    const servicio = turno.servicio;
-    const duracionServicio = servicio.duration_min + 30;
-
-    const [h, m, s] = horaLocal.split(':').map(Number);
-    const finDate = new Date();
-    finDate.setHours(h, m + duracionServicio, s);
-    const horaLocalFin = finDate.toTimeString().split(' ')[0];
-
-    const bloques = await this.dispoRepo.find({ where: { week_day: diaUTC } });
-    const enBloque = bloques.some(b => horaLocal >= b.start && horaLocalFin <= b.finish);
-
-    if (!enBloque) {
-      throw new NotFoundException('No hay bloque disponible');
-    }
-
-    const turnos = await this.turnoRepo.find({ relations: ['servicio'] });
-    const turnosMismoDia = turnos.filter(t => {
-      const turnoExistente = t.date.toISOString().split('T')[0];
-      return turno.date.toISOString().split('T')[0] === turnoExistente && t.uuid !== uuid;
+    const turno = await this.turnoRepo.findOne({
+      where: { uuid },
+      relations: ['servicio'],
     });
 
-    const haySolapamiento = turnosMismoDia.some(t => {
-      const ini = t.date.toTimeString().split(' ')[0];
-      const fin = new Date(t.date);
-      fin.setMinutes(t.date.getMinutes() + t.servicio.duration_min + 30);
-      const finlocal = fin.toTimeString().split(' ')[0];
-
-      console.log('Hora inicio turno nuevo local:', horaLocal);
-      console.log('Hora fin turno nuevo local:', horaLocalFin);
-
-      console.log('Hora inicio turno existente:', ini);
-      console.log('Hora fin turno existente:', finlocal);
-
-      return horaLocal <= finlocal && horaLocalFin > ini;
-    });
-
-    if (haySolapamiento) {
-      throw new BadRequestException('Hay solapamientooou');
+    if (!turno) {
+      throw new NotFoundException('Turno no encontrado');
     }
 
-    turno.date = dto.date;
-  }
+    // Solo si llega una nueva fecha
+    if (dto.date) {
+      const dateUTC = dto.date;
+      console.log('dateUTC:', dateUTC);
 
-  if (dto.state) {
-    turno.state = dto.state;
-  }
+      //Verificar si es feriado
+      const soloFecha = dateUTC.toISOString().split('T')[0];
+      const feriado = await this.feriadoRepo.findOne({ where: { date: soloFecha } });
+      if (feriado) {
+        throw new BadRequestException('No se pueden agendar turnos en feriados');
+      }
 
-  const actualizado = await this.turnoRepo.save(turno);
-  const { id, deletedAt, ...rest } = actualizado;
-  return rest;
-}
+      const diaUTC = mapDayToEnum(dateUTC.getDay());
+      console.log('dia utc:', diaUTC);
+
+      // HORA DE TURNO LOCAL
+      // const horaLocal = dateUTC.toTimeString().split(' ')[0];
+      const horaLocal = new Intl.DateTimeFormat('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'America/Argentina/Buenos_Aires'
+      }).format(dateUTC);
+
+      const servicio = turno.servicio;
+      const duracionServicio = servicio.duration_min + 30;
+
+      const [h, m, s] = horaLocal.split(':').map(Number);
+      const finDate = new Date();
+      finDate.setHours(h, m + duracionServicio, s);
+      const horaLocalFin = finDate.toTimeString().split(' ')[0];
+
+      const bloques = await this.dispoRepo.find({ where: { week_day: diaUTC } });
+      const enBloque = bloques.some(b => horaLocal >= b.start && horaLocalFin <= b.finish);
+
+      if (!enBloque) {
+        throw new NotFoundException('No hay bloque disponible');
+      }
+
+      const turnos = await this.turnoRepo.find({ relations: ['servicio'] });
+      const turnosMismoDia = turnos.filter(t => {
+        const turnoExistente = t.date.toISOString().split('T')[0];
+        return turno.date.toISOString().split('T')[0] === turnoExistente && t.uuid !== uuid;
+      });
+
+      const haySolapamiento = turnosMismoDia.some(t => {
+        const ini = t.date.toTimeString().split(' ')[0];
+        const fin = new Date(t.date);
+        fin.setMinutes(t.date.getMinutes() + t.servicio.duration_min + 30);
+        const finlocal = fin.toTimeString().split(' ')[0];
+
+        console.log('Hora inicio turno nuevo local:', horaLocal);
+        console.log('Hora fin turno nuevo local:', horaLocalFin);
+
+        console.log('Hora inicio turno existente:', ini);
+        console.log('Hora fin turno existente:', finlocal);
+
+        return horaLocal <= finlocal && horaLocalFin > ini;
+      });
+
+      if (haySolapamiento) {
+        throw new BadRequestException('Hay solapamientooou');
+      }
+
+      turno.date = dto.date;
+    }
+
+    if (dto.state) {
+      turno.state = dto.state;
+    }
+
+    const actualizado = await this.turnoRepo.save(turno);
+    const { id, deletedAt, ...rest } = actualizado;
+    return rest;
+  }
 
 
   async findAll() {
@@ -219,14 +234,14 @@ export class AppointmentsService {
 
 
 
-   async softDelete(uuid: string): Promise < any > {
-      // softDelete() actualiza la columna deletedAt
-      const turno = await this.turnoRepo.findOne({where: {uuid}})
-    if (!turno){
+  async softDelete(uuid: string): Promise<any> {
+    // softDelete() actualiza la columna deletedAt
+    const turno = await this.turnoRepo.findOne({ where: { uuid } })
+    if (!turno) {
       throw new NotFoundException('servicio no hallado')
     }
-      const result = await this.turnoRepo.softDelete(turno?.id);
-      if(result.affected === 0) {
+    const result = await this.turnoRepo.softDelete(turno?.id);
+    if (result.affected === 0) {
       throw new NotFoundException(`Turno con ID "${uuid}" no encontrado.`);
     }
     return result;
