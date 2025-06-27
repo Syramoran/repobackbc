@@ -16,11 +16,11 @@ import { APP_GUARD } from '@nestjs/core';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'mysql',
-      url: process.env.DATABASE_URL,
-      autoLoadEntities: true,
-      synchronize: true,
-    }),
+  type: 'mysql',
+  url: process.env.MYSQL_PUBLIC_URL, // 👈 cambio acá
+  autoLoadEntities: true,
+  synchronize: true,
+}),
 
     UsersModule,
     AppointmentsModule,
