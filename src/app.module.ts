@@ -1,27 +1,58 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
-import { AppointmentsModule } from './appointments/appointments.module';
-import { AuthModule } from './auth/auth.module';
-import { MailModule } from './mail/mail.module';
-import { CommonModule } from './common/common.module';
-import { FeriadosModule } from './feriados/feriados.module';
-import { ServiciosModule } from './servicios/servicios.module';
-import { DisponibilidadModule } from './disponibilidad/disponibilidad.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { UsersModule } from "./users/users.module";
+import { AppointmentsModule } from "./appointments/appointments.module";
+import { AuthModule } from "./auth/auth.module";
+import { MailModule } from "./mail/mail.module";
+import { CommonModule } from "./common/common.module";
+import { FeriadosModule } from "./feriados/feriados.module";
+import { ServiciosModule } from "./servicios/servicios.module";
+import { DisponibilidadModule } from "./disponibilidad/disponibilidad.module";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+import { APP_GUARD } from "@nestjs/core";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import config from "./config/config";
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-  type: 'mysql',
-  url: process.env.MYSQL_PUBLIC_URL, // 👈 cambio acá
-  autoLoadEntities: true,
-  synchronize: true,
-}),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      ignoreEnvFile: false,
+      load: [config],
+    }),
 
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const isDev = configService.get<string>('nodeEnv') === 'development';
+
+        if (isDev) {
+          const db = configService.get('db');
+          return {
+            type: 'mysql',
+            host: db.host,
+            port: db.port,
+            username: db.username,
+            password: db.password,
+            database: db.database,
+            autoLoadEntities: true,
+            synchronize: true,
+          };
+        } else {
+          return {
+            type: 'mysql',
+            url: configService.get<string>('mysqlUrl'),
+            autoLoadEntities: true,
+            synchronize: true,
+          };
+        }
+      },
+    }),
+
+    // 🔹 Módulos de tu app
     UsersModule,
     AppointmentsModule,
     AuthModule,
@@ -30,33 +61,23 @@ import { APP_GUARD } from '@nestjs/core';
     FeriadosModule,
     ServiciosModule,
     DisponibilidadModule,
+
+    // 🔹 Throttler
     ThrottlerModule.forRoot({
       throttlers: [
-        {
-          name: 'short',
-          ttl: 1000,
-          limit: 3,
-        },
-        {
-          name: 'medium',
-          ttl: 10000,
-          limit: 20
-        },
-        {
-          name: 'long',
-          ttl: 60000,
-          limit: 100
-        }
+        { name: 'short', ttl: 1000, limit: 3 },
+        { name: 'medium', ttl: 10000, limit: 20 },
+        { name: 'long', ttl: 60000, limit: 100 },
       ],
-    }),],
+    }),
+  ],
   controllers: [AppController],
-  providers: [AppService,
+  providers: [
+    AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard
-    }
+      useClass: ThrottlerGuard,
+    },
   ],
 })
-export class AppModule { 
-  
-}
+export class AppModule {}
