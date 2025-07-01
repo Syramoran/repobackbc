@@ -37,7 +37,7 @@ export class EmailService {
     });
 
     await this.transporter.sendMail({
-      from: `"Consulta" <${this.configService.get<string>('MAIL_USER')}>`,
+      from: "Consulta",
       to: 'syramoranicr@gmail.com',
       subject: 'Consulta Bajo Cero',
       html,

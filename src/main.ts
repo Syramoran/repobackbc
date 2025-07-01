@@ -20,7 +20,7 @@ app.use(helmet());
   app.setGlobalPrefix('api')
 
   app.enableCors({
-    origin: ['https://repobc.vercel.app', 'http://localhost:3000'], // Lista de orígenes permitidos
+    origin: ['https://bajocerosoluciones.com', 'http://localhost:3000'], // Lista de orígenes permitidos
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', // Métodos permitidos
     credentials: true, // Permitir cookies/enviar credenciales (si es necesario)
     allowedHeaders: 'Content-Type,Authorization,X-Requested-With', // Cabeceras permitidas
