@@ -38,7 +38,7 @@ export class EmailService {
 
     await this.transporter.sendMail({
       from: "Consulta",
-      to: 'syramoranicr@gmail.com',
+      to: 'alesiog.18@gmail.com',
       subject: 'Consulta Bajo Cero',
       html,
     });
