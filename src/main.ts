@@ -1,8 +1,10 @@
+import * as crypto from 'crypto';
+(global as any).crypto = crypto;
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
-import * as crypto from 'crypto';
+
 
 
 async function bootstrap() {
