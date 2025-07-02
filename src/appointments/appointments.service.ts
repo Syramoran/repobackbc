@@ -31,19 +31,6 @@ export class AppointmentsService {
     //DIA 
     const diaUTC = mapDayToEnum(dateUTC.getDay());
 
-
-
-    // HORA DE TURNO LOCAL
-    // const horaLocal = dateUTC.toTimeString().split(' ')[0];
-    const horaLocal = new Intl.DateTimeFormat('es-AR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-      timeZone: 'America/Argentina/Buenos_Aires'
-    }).format(dateUTC);
-
-
     //SERVICIO
     const servicio = await this.servicioRepo.findOne({ where: { uuid: dto.servicio_uuid } });
     if (!servicio) {
@@ -51,21 +38,22 @@ export class AppointmentsService {
     }
     const duracionServicio = servicio.duration_min + 30;
 
-    // CALCULAR HORA FINAL TURNO LOCAL
-const [h, m, s] = horaLocal.split(':').map(Number);
+    //INICIO Y FIN DEL TURNO
+    const options: Intl.DateTimeFormatOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+      timeZone: "America/Argentina/Buenos_Aires"
+    };
 
-// Crear fecha base desde dateUTC para mantener día correcto
-const finDate = new Date(dateUTC);
-finDate.setHours(h, m + duracionServicio, s); // suma duración al minuto
+    const inicioTurnoArgentina = new Intl.DateTimeFormat('es-AR', options).format(dateUTC);
 
-// Obtener hora final en hora argentina con Intl
-const horaLocalFin = new Intl.DateTimeFormat('es-AR', {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-  timeZone: 'America/Argentina/Buenos_Aires'
-}).format(finDate);
+    let finTurno = new Date(dateUTC);
+    finTurno.setMinutes(finTurno.getMinutes() + duracionServicio);
+
+    const finTurnoArgentina = new Intl.DateTimeFormat('es-AR', options).format(finTurno);
+
 
 
     //Verificar si es feriado
@@ -75,9 +63,10 @@ const horaLocalFin = new Intl.DateTimeFormat('es-AR', {
       throw new BadRequestException('No se pueden agendar turnos en feriados');
     }
 
+
     //bloques
     const bloques = await this.dispoRepo.find({ where: { week_day: diaUTC } });
-    const enBloque = bloques.some(b => { return horaLocal >= b.start && horaLocalFin <= b.finish; })
+    const enBloque = bloques.some(b => { return inicioTurnoArgentina >= b.start && finTurnoArgentina <= b.finish; })
 
     if (!enBloque) { throw new NotFoundException('No hay bloque disponible') }
 
@@ -90,18 +79,14 @@ const horaLocalFin = new Intl.DateTimeFormat('es-AR', {
     });
 
     const haySolapamiento = turnosMismoDia.some(t => {
-      const ini = t.date.toTimeString().split(' ')[0];
-      const fin = new Date(t.date);
-      fin.setMinutes(t.date.getMinutes() + t.servicio.duration_min + 30)
-      const finlocal = fin.toTimeString().split(' ')[0];
+      const ini = new Intl.DateTimeFormat('es-AR', options).format(t.date);
 
-      // console.log('Hora inicio turno nuevo local:', horaLocal)
-      // console.log('Hora fin turno nuevo local:', horaLocalFin)
+      let fin = new Date(t.date);
+      fin.setMinutes(finTurno.getMinutes() + t.servicio.duration_min);
 
-      // console.log('Hora inicio turno existente:', ini)
-      // console.log('Hora fin turno existente:', finlocal)
+      const finArgentina = new Intl.DateTimeFormat('es-AR', options).format(fin);
 
-      return horaLocal <= finlocal && horaLocalFin > ini
+      return inicioTurnoArgentina <= finArgentina && finTurnoArgentina > ini
     })
 
     if (haySolapamiento) {
@@ -160,51 +145,55 @@ const horaLocalFin = new Intl.DateTimeFormat('es-AR', {
       const diaUTC = mapDayToEnum(dateUTC.getDay());
       console.log('dia utc:', diaUTC);
 
-      // HORA DE TURNO LOCAL
-      // const horaLocal = dateUTC.toTimeString().split(' ')[0];
-      const horaLocal = new Intl.DateTimeFormat('es-AR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: 'America/Argentina/Buenos_Aires'
-      }).format(dateUTC);
-
-      const servicio = turno.servicio;
+      //SERVICIO
+      const servicio = await this.servicioRepo.findOne({ where: { uuid: turno.servicio.uuid } });
+      if (!servicio) {
+        throw new NotFoundException('Servicio invalido');
+      }
       const duracionServicio = servicio.duration_min + 30;
 
-      const [h, m, s] = horaLocal.split(':').map(Number);
-      const finDate = new Date();
-      finDate.setHours(h, m + duracionServicio, s);
-      const horaLocalFin = finDate.toTimeString().split(' ')[0];
+
+      //INICIO Y FIN DEL TURNO
+      const options: Intl.DateTimeFormatOptions = {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+        timeZone: "America/Argentina/Buenos_Aires"
+      };
+
+      const inicioTurnoArgentina = new Intl.DateTimeFormat('es-AR', options).format(dateUTC);
+
+      let finTurno = new Date(dateUTC);
+      finTurno.setMinutes(finTurno.getMinutes() + duracionServicio);
+
+      const finTurnoArgentina = new Intl.DateTimeFormat('es-AR', options).format(finTurno);
 
       const bloques = await this.dispoRepo.find({ where: { week_day: diaUTC } });
-      const enBloque = bloques.some(b => horaLocal >= b.start && horaLocalFin <= b.finish);
+      const enBloque = bloques.some(b => { return inicioTurnoArgentina >= b.start && finTurnoArgentina <= b.finish; })
 
       if (!enBloque) {
         throw new NotFoundException('No hay bloque disponible');
       }
 
-      const turnos = await this.turnoRepo.find({ relations: ['servicio'] });
+      //VALIDAR: solapamiento
+      const turnos = await this.turnoRepo.find({ relations: ['servicio'] })
       const turnosMismoDia = turnos.filter(t => {
         const turnoExistente = t.date.toISOString().split('T')[0];
-        return turno.date.toISOString().split('T')[0] === turnoExistente && t.uuid !== uuid;
+        return turno.date.toISOString().split('T')[0] === turnoExistente;
       });
 
       const haySolapamiento = turnosMismoDia.some(t => {
-        const ini = t.date.toTimeString().split(' ')[0];
-        const fin = new Date(t.date);
-        fin.setMinutes(t.date.getMinutes() + t.servicio.duration_min + 30);
-        const finlocal = fin.toTimeString().split(' ')[0];
+        const ini = new Intl.DateTimeFormat('es-AR', options).format(t.date);
 
-        console.log('Hora inicio turno nuevo local:', horaLocal);
-        console.log('Hora fin turno nuevo local:', horaLocalFin);
+        let fin = new Date(t.date);
+        fin.setMinutes(finTurno.getMinutes() + t.servicio.duration_min);
 
-        console.log('Hora inicio turno existente:', ini);
-        console.log('Hora fin turno existente:', finlocal);
+        const finArgentina = new Intl.DateTimeFormat('es-AR', options).format(fin);
 
-        return horaLocal <= finlocal && horaLocalFin > ini;
-      });
+        return inicioTurnoArgentina <= finArgentina && finTurnoArgentina > ini
+      })
+
 
       if (haySolapamiento) {
         throw new BadRequestException('Hay solapamientooou');
@@ -213,13 +202,20 @@ const horaLocalFin = new Intl.DateTimeFormat('es-AR', {
       turno.date = dto.date;
     }
 
-    if (dto.state) {
+    if (turno.state) {
       turno.state = dto.state;
     }
 
     const actualizado = await this.turnoRepo.save(turno);
-    const { id, deletedAt, ...rest } = actualizado;
-    return rest;
+    const { id, deletedAt, user, servicio: servicioGuardado, ...rest } = actualizado;
+    return {
+      ...rest,
+      user: { uuid: user.uuid, name: user.name },
+      servicio: { name: servicioGuardado.name }
+    };
+  } catch(error) {
+    console.error('Error al guardar el turno:', error);
+    throw new InternalServerErrorException('No se pudo guardar el turno');
   }
 
 
