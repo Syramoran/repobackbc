@@ -44,7 +44,7 @@ import config from "./config/config";
         } else {
           return {
             type: 'postgres',
-            url: configService.get<string>('mysqlUrl'),
+            url: configService.get<string>('postgresUrl'),
             autoLoadEntities: true,
             synchronize: true,
           };
