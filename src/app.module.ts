@@ -32,7 +32,7 @@ import config from "./config/config";
         if (isDev) {
           const db = configService.get('db');
           return {
-            type: 'mysql',
+            type: 'postgres',
             host: db.host,
             port: db.port,
             username: db.username,
@@ -43,7 +43,7 @@ import config from "./config/config";
           };
         } else {
           return {
-            type: 'mysql',
+            type: 'postgres',
             url: configService.get<string>('mysqlUrl'),
             autoLoadEntities: true,
             synchronize: true,
