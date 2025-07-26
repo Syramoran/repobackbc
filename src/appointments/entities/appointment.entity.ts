@@ -13,7 +13,7 @@ export class Appointment {
     @Column({ type: 'varchar', length: 36, unique: true })
     uuid: string;
 
-    @Column({ type: 'datetime', nullable: false })
+    @Column({ type: 'timestamp', nullable: false })
     date: Date;
 
     @Column({ type: 'enum', enum: Estados, default: Estados.PENDIENTE })

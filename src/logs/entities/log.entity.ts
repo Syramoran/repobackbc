@@ -26,7 +26,7 @@ export class Log {
   @Column({ type: 'enum', enum: LogAction })
   action: LogAction;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   date: Date;
 
   @ManyToOne(() => Appointment)
